@@ -2,6 +2,7 @@
 using NLog;
 using NLog.Config;
 using NLog.Targets;
+using NLog.Targets.Wrappers;
 
 namespace Logger
 {
@@ -55,9 +56,12 @@ namespace Logger
             var fileTarget = new FileTarget("target2")
             {
                 FileName = "${basedir}/logs/${shortdate}.log",
-                Layout ="${longdate} | ${level} | Message: ${message} | Exception: ${exception}"
+                Layout ="${longdate} | ${level} | Message: ${message} | Exception: ${exception:format=ToString,Stacktrace}${newline}"
             };
-            config.AddTarget(fileTarget);
+
+            var wrapper = new AsyncTargetWrapper(fileTarget, 5000, AsyncTargetWrapperOverflowAction.Discard);
+
+            config.AddTarget("FileWrapper",wrapper);
 
             config.AddRuleForOneLevel(LogLevel.Debug, fileTarget);
             config.AddRuleForOneLevel(LogLevel.Error, fileTarget);
