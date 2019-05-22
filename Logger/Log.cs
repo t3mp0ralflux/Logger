@@ -14,10 +14,10 @@ namespace Logger
         /// <param name="declaringType"></param>
         /// <param name="text"></param>
         /// <param name="exception"></param>
-        public static void LogInfo(Type declaringType, string text, Exception exception = null)
+        public static void LogInfo(Type declaringType, string text)
         {
             var logger = LogManager.GetLogger(declaringType.FullName);
-            logger.Info(exception,text);
+            logger.Info(text);
         }
 
         /// <summary>
@@ -26,10 +26,10 @@ namespace Logger
         /// <param name="declaringType"></param>
         /// <param name="text"></param>
         /// <param name="exception"></param>
-        public static void LogError(Type declaringType, string text, Exception exception = null)
+        public static void LogError(Type declaringType, string text, Exception exception)
         {
             var logger = LogManager.GetLogger(declaringType.FullName);
-            logger.Error(exception,text);
+            logger.Error(exception, text);
         }
 
         /// <summary>
@@ -41,7 +41,7 @@ namespace Logger
         public static void LogDebug(Type declaringType, string text, Exception exception = null)
         {
             var logger = LogManager.GetLogger(declaringType.FullName);
-            logger.Debug(exception,text);
+            logger.Debug(exception, text);
         }
 
         static Log()
@@ -53,23 +53,30 @@ namespace Logger
             };
             config.AddTarget(consoleTarget);
 
-            var fileTarget = new FileTarget("target2")
+            var errorTarget = new FileTarget("ErrorLog")
             {
                 FileName = "${basedir}/logs/${shortdate}.log",
-                Layout ="${longdate} | ${level} | Message: ${message} | Exception: ${exception:format=ToString,Stacktrace}${newline}"
+                Layout = "${longdate} | ${level} | Message: ${message} | Exception: ${exception:format=ToString,Stacktrace}${newline}"
             };
 
-            var wrapper = new AsyncTargetWrapper(fileTarget, 5000, AsyncTargetWrapperOverflowAction.Discard);
+            var infoTarget = new FileTarget("InfoTarget")
+            {
+                FileName = "${basedir}/logs/${shortdate}.log",
+                Layout = "${longdate} | ${level} | Message: ${message}"
+            };
 
-            config.AddTarget("FileWrapper",wrapper);
+            var errorWrapper = new AsyncTargetWrapper(errorTarget, 5000, AsyncTargetWrapperOverflowAction.Discard);
+            var infoWrapper = new AsyncTargetWrapper(infoTarget, 5000, AsyncTargetWrapperOverflowAction.Discard);
 
-            config.AddRuleForOneLevel(LogLevel.Debug, fileTarget);
-            config.AddRuleForOneLevel(LogLevel.Error, fileTarget);
+            config.AddTarget("ErrorWrapper", errorWrapper);
+            config.AddTarget("InfoWrapper", infoWrapper);
+
+            config.AddRuleForOneLevel(LogLevel.Info, "InfoWrapper");
+            config.AddRuleForOneLevel(LogLevel.Error, "ErrorWrapper");
+            config.AddRuleForOneLevel(LogLevel.Debug, "InfoWrapper");
             config.AddRuleForAllLevels(consoleTarget);
 
             LogManager.Configuration = config;
-            
         }
-
     }
 }
